@@ -51,6 +51,8 @@ fn main() -> anyhow::Result<()> {
     known_offset.insert("/ramdisk", ("cpio.gz", 0x800));
     known_offset.insert("/updater_ramdisk", ("cpio.gz", 0x800));
     known_offset.insert("/updater_ramdisk_bak", ("cpio.gz", 0x800));
+    known_offset.insert("/updater_vendor", ("cpio.gz", 0x800));
+    known_offset.insert("/updater_vendor_bak", ("cpio.gz", 0x800));
     loop {
         // parse tlv
         let tag = u16::from_le_bytes([mmap[component_offset + 0x0], mmap[component_offset + 0x1]])
