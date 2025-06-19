@@ -1,5 +1,6 @@
 use clap::Parser;
 use memmap::MmapOptions;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -44,6 +45,12 @@ fn main() -> anyhow::Result<()> {
     println!("Component count: {}", count);
 
     let mut component_offset = UPGRADE_FILE_HEADER_LEN + compinfo_len + UPGRADE_RESERVE_LEN;
+
+    let mut known_offset: HashMap<&str, (&str, usize)> = HashMap::new();
+    known_offset.insert("/fw_dtb", ("dtb", 0x2160));
+    known_offset.insert("/ramdisk", ("cpio.gz", 0x800));
+    known_offset.insert("/updater_ramdisk", ("cpio.gz", 0x800));
+    known_offset.insert("/updater_ramdisk_bak", ("cpio.gz", 0x800));
     loop {
         // parse tlv
         let tag = u16::from_le_bytes([mmap[component_offset + 0x0], mmap[component_offset + 0x1]])
@@ -93,17 +100,11 @@ fn main() -> anyhow::Result<()> {
             file.write_all(&mmap[component_offset..component_offset + size])?;
             println!("Saved to {}", path.canonicalize()?.display());
 
-            if name_str == "/fw_dtb" {
-                // extra raw .dtb file
-                let path = output.join(format!(".{}.dtb", name_str));
+            if let Some((suffix, offset)) = known_offset.get(name_str) {
+                // extra raw content
+                let path = output.join(format!(".{}.{}", name_str, suffix));
                 let mut file = File::create(&path)?;
-                file.write_all(&mmap[component_offset + 0x2160..component_offset + size])?;
-                println!("Saved to {}", path.canonicalize()?.display());
-            } else if name_str == "/ramdisk" {
-                // extra raw .cpio.gz file
-                let path = output.join(format!(".{}.cpio.gz", name_str));
-                let mut file = File::create(&path)?;
-                file.write_all(&mmap[component_offset + 0x800..component_offset + size])?;
+                file.write_all(&mmap[component_offset + offset..component_offset + size])?;
                 println!("Saved to {}", path.canonicalize()?.display());
             }
         }
