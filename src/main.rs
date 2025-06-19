@@ -99,6 +99,12 @@ fn main() -> anyhow::Result<()> {
                 let mut file = File::create(&path)?;
                 file.write_all(&mmap[component_offset + 0x2160..component_offset + size])?;
                 println!("Saved to {}", path.canonicalize()?.display());
+            } else if name_str == "/ramdisk" {
+                // extra raw .cpio.gz file
+                let path = output.join(format!(".{}.cpio.gz", name_str));
+                let mut file = File::create(&path)?;
+                file.write_all(&mmap[component_offset + 0x800..component_offset + size])?;
+                println!("Saved to {}", path.canonicalize()?.display());
             }
         }
 
